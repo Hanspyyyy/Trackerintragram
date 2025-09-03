@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Unfollow</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    body {
+      padding-top: 200px;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 10px;
+  color: #e6edf3;
+  background: linear-gradient(135deg, 
+              #8e44ad, /* ungu */
+              #e84393, /* pink */
+              #0984e3, /* biru */
+              #00b894  /* hijau */
+             );
+  background-size: 400% 400%;
+  animation: gradientMove 10s ease infinite;
+  padding-top: 80px;
+}
+
+/* animasi biar gradiennya kelihatan abstrak bergerak */
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.header {
+  text-align: center; /* biar logo + teks ketengah */
+  margin-top: 10px;
+}
+
+.logo {
+  margin-top: 0;
+  width: 100px;          /* ukuran logo */
+  height: 100px;         /* biar bulet harus sama */
+  border-radius: 50%;    /* bikin bulat */
+  object-fit: cover;     /* biar gambarnya rapi */
+  margin-bottom: 0px;   /* jarak ke teks */
+  border: 4px solid #fff; /* garis putih bulat */
+  box-shadow: 0 0 15px rgba(0,0,0,0.5); /* bayangan estetik */
+}
+    h1 {
+      color: WHITE;
+      margin-bottom: 1px;
+      font-size:24px;
+      
+    }
+    input[type="file"] {
+      margin: 15px 0;
+      padding: 10px;
+    }
+    button {
+      background: #0984e3;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+    button:hover {
+      background: #ff4d4d;
+    }
+    ul {
+      text-align: left;
+      max-width: 400px;
+      margin: 20px auto;
+      background: white;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 8px;
+    }
+    li {
+      margin-left: 11px;
+      font-family: Arial, Sans-Serif;
+      border-bottom: 1px solid pink;
+      padding: 6px 0;
+      color:black;
+      font-family: Arial, Sans-Serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+  <img src="ui11.png" alt="Logo" class="logo">
+  <h1>YA KITA CARI SI SELEB ITUUU</h1>
+  <p>Upload file <b>ZIP Instagram</b> kamu yang udh di dowload ya berupa zip json:</p>
+  <input type="file" id="zipFile" accept=".zip">
+  <br>
+  <button onclick="cekUnfollowers()">Cek Unfollowers</button>
+
+  <h2 id="resultTitle"></h2>
+  <ul id="resultList"></ul>
+
+  <script>
+    async function cekUnfollowers() {
+      const fileInput = document.getElementById('zipFile').files[0];
+      if (!fileInput) {
+        alert("Pilih file ZIP dulu bro!");
+        return;
+      }
+
+      const zip = await JSZip.loadAsync(fileInput);
+      
+      // Cari file followers & following di dalam ZIP
+      let followersFile = null;
+      let followingFile = null;
+
+      zip.forEach((path) => {
+        if (path.includes("connections/followers_and_following/followers_1.json")) {
+          followersFile = path;
+        }
+        if (path.includes("connections/followers_and_following/following.json")) {
+          followingFile = path;
+        }
+      });
+
+      if (!followersFile || !followingFile) {
+        alert("ZIP tidak berisi followers_1.json dan following.json dari Instagram!");
+        return;
+      }
+
+      // Baca isi file JSON
+      const followersContent = await zip.file(followersFile).async("string");
+      const followingContent = await zip.file(followingFile).async("string");
+
+      const followersJson = JSON.parse(followersContent);
+      const followingJson = JSON.parse(followingContent);
+
+      // Ambil list followers
+      const followers = followersJson.map(f => f.string_list_data[0].value);
+      // Ambil list following
+      const following = followingJson.relationships_following.map(f => f.string_list_data[0].value);
+
+      // Cari yang tidak follow balik
+      const notFollowingBack = following.filter(user => !followers.includes(user));
+
+      // Tampilkan hasil
+      const resultTitle = document.getElementById("resultTitle");
+      const resultList = document.getElementById("resultList");
+
+      resultTitle.textContent = `TOTAL: ${notFollowingBack.length} SELEB`;
+      resultList.innerHTML = "";
+
+      if (notFollowingBack.length === 0) {
+        resultList.innerHTML = "<li>Semua follow balik bro 🎉</li>";
+      } else {
+        notFollowingBack.forEach(user => {
+          const li = document.createElement("li");
+          li.textContent = user;
+          resultList.appendChild(li);
+        });
+      }
+    }
+  </script>
+</body>
+  </html>
